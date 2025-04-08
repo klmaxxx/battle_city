@@ -3,6 +3,7 @@ import logging
 import pygame
 
 from bullet import Bullet
+from mapmanager import Wall
 from player import Player
 
 # Настройка логгера
@@ -20,7 +21,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Battle City Remake")
 
 # Карта
-wall = pygame.image.load("assets/brick.png")
+wall = Wall(500, 100, 100, 100)
 
 
 def main():
@@ -46,15 +47,11 @@ def main():
                     all_sprites.add(bullet)
 
         keys = pygame.key.get_pressed()
+        screen.fill(BLACK)
         player.update(keys)
         bullets.update()
-
-        screen.fill(BLACK)
+        wall.update(screen)
         all_sprites.draw(screen)
-        screen.blit(wall, (50, 100))
-        screen.blit(wall, (250, 100))
-        screen.blit(wall, (450, 100))
-        screen.blit(wall, (650, 100))
         pygame.display.flip()
         clock.tick(FPS)
 

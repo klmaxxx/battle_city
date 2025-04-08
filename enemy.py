@@ -10,7 +10,7 @@ class Enemy:
         self.y = y
     
 #otrisovka sprite'a   
-    def reset(self, screen, x, y):
+    def update(self, screen, x, y):
         screen.blit(self, (x, y))
     
     def attack(self, p_x, p_y):
