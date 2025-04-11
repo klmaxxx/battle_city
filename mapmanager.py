@@ -66,13 +66,12 @@ def map1():
     wall10.update(screen)
 
 
-map = True
+# map = True
 
 
-while map:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            map = False
-    screen.fill((0, 0, 0))
-    map1()
-    pygame.display.flip()
+# while map:
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             map = False
+#     screen.fill((0, 0, 0))
+#     pygame.display.flip()

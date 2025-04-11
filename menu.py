@@ -8,8 +8,11 @@ FONT_SIZE = 50
 
 def show_menu(screen):
     pygame.font.init()
+    pygame.mixer.init()
     font = pygame.font.Font(None, FONT_SIZE)
     clock = pygame.time.Clock()
+    pygame.mixer.music.load("assets/soundtrack1.mp3")
+    pygame.mixer.music.play()
 
     menu_running = True
     while menu_running:
@@ -32,6 +35,7 @@ def show_menu(screen):
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:  # ENTER key
+                    pygame.mixer.music.pause()
                     menu_running = False
                 if event.key == pygame.K_ESCAPE:  # ESC key
                     pygame.quit()

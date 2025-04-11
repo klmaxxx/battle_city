@@ -4,6 +4,7 @@ import pygame
 
 from bullet import Bullet
 from mapmanager import map1
+from menu import show_menu
 from player import Player
 
 # Настройка логгера
@@ -34,9 +35,10 @@ def main():
 
     logging.info("Game started")
 
+    show_menu(screen)
+    pygame.mixer.music.load("assets/soundtrack.mp3")
+    pygame.mixer.music.play()
     while running:
-        pygame.mixer.music.load("assets/soundtrack.mp3")
-        pygame.mixer.music.play()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
