@@ -3,13 +3,14 @@ import logging
 import pygame
 
 from bullet import Bullet
-from mapmanager import Wall
+from mapmanager import map1
 from player import Player
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
 pygame.init()
+pygame.mixer.init()
 
 # Константы
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
@@ -21,7 +22,6 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Battle City Remake")
 
 # Карта
-wall = Wall(500, 100, 100, 100)
 
 
 def main():
@@ -35,6 +35,8 @@ def main():
     logging.info("Game started")
 
     while running:
+        pygame.mixer.music.load("assets/soundtrack.mp3")
+        pygame.mixer.music.play()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -48,9 +50,9 @@ def main():
 
         keys = pygame.key.get_pressed()
         screen.fill(BLACK)
+        map1()
         player.update(keys)
         bullets.update()
-        wall.update(screen)
         all_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
