@@ -38,6 +38,18 @@ class Wall:
                 # player.rect.x -= player.speedx
                 player.rect.right = self.rect.left
 
+    def check_collision(self, bullets):
+        for bullet in bullets:
+            if self.rect.colliderect(bullet.rect):
+                bullet.kill()  
+                self.hit_count -= 1
+                if self.hit_count <= 0:
+                    self.kill()  
+
+    def kill(self):
+        self.rect.x = -100  
+        self.rect.y = -100
+
 
 img1 = "assets/brick.png"
 img2 = "assets/brick1.png"
