@@ -11,7 +11,8 @@ class Enemy(pygame.sprite.Sprite):
         self.original_image = pygame.image.load("assets/enemy.png").convert_alpha()
         self.original_image = pygame.transform.scale(self.original_image, (50, 50))
         self.image = self.original_image.copy()
-        self.rect = self.image.get_rect(topleft=(x, y))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
         self.speed = 2
         self.direction = random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])
         self.player = player

@@ -83,3 +83,4 @@ class Player(pygame.sprite.Sprite):
                     self.rect.left = wall.rect.right
                 elif self.direction == 'RIGHT':
                     self.rect.right = wall.rect.left
+    
