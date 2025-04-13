@@ -66,7 +66,7 @@ def main():
 
         # Создаем врагов
         enemies = pygame.sprite.Group()
-        enemy1 = Enemy("assets/enemy.png", 200, 100, 40, 40)
+        enemy1 = Enemy("assets/enemy.png", 100, 100, 40, 40)
         enemy2 = Enemy("assets/enemy.png", 700, 100, 40, 40)
         enemy3 = Enemy("assets/enemy.png", 400, 300, 40, 40)
         for enemy in [enemy1, enemy2, enemy3]:
@@ -99,14 +99,16 @@ def main():
                 wall.update(screen)
                 wall.check_collision(bullets)
                 wall.player_collide(player)
+                if wall.is_destroyed():  # Удаляем стену, если она разрушена
+                    walls.remove(wall)
 
             player.update(keys)
-            bullets.update()
-            enemy_bullets.update()
+            bullets.update(walls)  # Передаем список стен
+            enemy_bullets.update(walls)  # Передаем список стен
 
             for enemy in enemies:
                 enemy.update(screen, player.rect.x, player.rect.y)
-                if pygame.time.get_ticks() % 100 == 0:
+                if pygame.time.get_ticks() % 100 == 0:  
                     if enemy.direction == "UP":
                         enemy_bullet = Bullet(enemy.x + 20, enemy.y, "UP")
                     elif enemy.direction == "DOWN":
@@ -127,13 +129,13 @@ def main():
             if pygame.sprite.spritecollideany(player, enemies) or pygame.sprite.spritecollideany(
                 player, enemy_bullets
             ):
-                all_sprites.empty()
+                all_sprites.empty() 
                 show_game_over(screen, "You lost!")
                 running = False
 
             # # Проверка на победу
             if not enemies:
-                all_sprites.empty()
+                all_sprites.empty()  
                 show_game_over(screen, "You won!", victory=True)
                 running = False
 
@@ -150,15 +152,17 @@ def main():
                     return
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        waiting_for_restart = False
+                        waiting_for_restart = False  
                     elif event.key == pygame.K_ESCAPE:
-                        show_menu(screen)
+                        show_menu(screen)  
                         waiting_for_restart = False
 
 
 def show_game_over(screen, message, victory=False):
     font = pygame.font.Font(None, 74)
-    text_color = (0, 255, 0) if victory else (255, 0, 0)
+    text_color = (
+        (0, 255, 0) if victory else (255, 0, 0)
+    )  
     text = font.render(message, True, text_color)
     restart_text = pygame.font.Font(None, 36).render(
         "Press enter to get back to restart", True, (255, 255, 255)
@@ -176,7 +180,7 @@ def show_game_over(screen, message, victory=False):
         menu_text, (SCREEN_WIDTH // 2 - menu_text.get_width() // 2, SCREEN_HEIGHT // 2 + 100)
     )
     pygame.display.flip()
-    pygame.time.wait(1000)
+    pygame.time.wait(1000)  
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 10
         self.direction = direction
 
-    def update(self):
+    def update(self, walls):
         shot.play()
         if self.direction == 'UP':
             self.rect.y -= self.speed
@@ -27,6 +27,13 @@ class Bullet(pygame.sprite.Sprite):
             self.rect.x -= self.speed
         elif self.direction == 'RIGHT':
             self.rect.x += self.speed
+
+        # Проверка столкновения с стенами
+        for wall in walls:
+            if self.rect.colliderect(wall.rect):
+                wall.take_damage()  # Наносим урон стене
+                self.kill()  # Уничтожаем пулю
+                return
 
         # Удаление пули при вылете за экран
         if (self.rect.right < 0 or self.rect.left > SCREEN_WIDTH or

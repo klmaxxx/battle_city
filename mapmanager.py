@@ -6,10 +6,10 @@ screen = pygame.display.set_mode((800, 600))
 
 
 # класс для стен
-class Wall:
-    def __init__(self, x, y, width, height, image):
+class Wall(pygame.sprite.Sprite):
+    def __init__(self, x, y, width, height, image_path):
         self.image = pygame.transform.scale(
-            pygame.image.load(image), (width, height)
+            pygame.image.load(image_path), (width, height)
         ).convert_alpha()
         self.x = x
         self.y = y
@@ -18,10 +18,20 @@ class Wall:
         self.rect = pygame.Rect(x, y, width, height)
         self.hp = 100
         self.hit_count = 4
+        self.health = 4  # Здоровье стены
+
+    def take_damage(self):
+        """Уменьшает здоровье стены при попадании пули."""
+        self.health -= 1
+
+    def is_destroyed(self):
+        """Проверяет, разрушена ли стена."""
+        return self.health <= 0
 
     # функция для отрисовки стен
     def update(self, screen):
-        screen.blit(self.image, (self.x, self.y))
+        if not self.is_destroyed():  # Рисуем стену только если она не разрушена
+            screen.blit(self.image, self.rect)
 
     # функция для коллизий - взял ее из своего старого проекта
     def player_collide(self, player):
@@ -52,7 +62,6 @@ class Wall:
                 self.hit_count -= 1
                 if self.hit_count <= 0:
                     self.kill()  
-
 
 
 # map = True
