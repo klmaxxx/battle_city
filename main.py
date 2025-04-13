@@ -18,13 +18,39 @@ pygame.mixer.init()
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 FPS = 60
 BLACK = (0, 0, 0)
+img1 = "assets/brick.png"
+img2 = "assets/brick1.png"
 
 # Экран
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Battle City Remake")
 
 # Карта
-walls = [Wall(500, 100, 100, 100, "assets/brick.png"), Wall(200, 300, 35, 100, "assets/brick.png")]
+walls = [
+    # 1 chast karti
+    Wall(500, 100, 35, 100, img1),
+    Wall(500, 200, 100, 35, img2),
+    Wall(600, 200, 100, 35, img2),
+    Wall(700, 200, 100, 35, img2),
+    # 2 chast karti
+    Wall(100, 100, 35, 100, img1),
+    Wall(0, 200, 100, 35, img2),
+    Wall(35, 200, 100, 35, img2),
+    Wall(650, 230, 35, 100, img1),
+    Wall(250, 0, 35, 100, img1),
+    Wall(350, 0, 35, 100, img1),
+    Wall(350, 100, 35, 100, img1),
+    # 3 chast karti
+    Wall(0, 400, 100, 35, img2),
+    Wall(100, 400, 100, 35, img2),
+    Wall(200, 400, 100, 35, img2),
+    Wall(300, 400, 100, 35, img2),
+    Wall(400, 400, 100, 35, img2),
+    Wall(500, 400, 100, 35, img2),
+    Wall(600, 400, 100, 35, img2),
+    Wall(700, 400, 100, 35, img2),
+    Wall(150, 430, 35, 100, img1),
+]
 
 
 def main():
@@ -40,9 +66,11 @@ def main():
 
         # Создаем врагов
         enemies = pygame.sprite.Group()
-        enemy1 = Enemy(player, 100, 100, enemy_bullets, walls)
-        enemy2 = Enemy(player, 700, 100, enemy_bullets, walls)
-        enemy3 = Enemy(player, 400, 300, enemy_bullets, walls)
+        enemy1 = Enemy("assets/enemy.png", 200, 100, 40, 40)
+        enemy2 = Enemy("assets/enemy.png", 700, 100, 40, 40)
+        enemy3 = Enemy("assets/enemy.png", 400, 300, 40, 40)
+        for enemy in [enemy1, enemy2, enemy3]:
+            enemy.walls = walls  # Передаем список стен врагам
         enemies.add(enemy1, enemy2, enemy3)
         all_sprites.add(enemies)
 
@@ -66,17 +94,19 @@ def main():
 
             keys = pygame.key.get_pressed()
             screen.fill(BLACK)
+            # Карта
             for wall in walls:
                 wall.update(screen)
+                wall.check_collision(bullets)
+                wall.player_collide(player)
 
             player.update(keys)
             bullets.update()
             enemy_bullets.update()
 
-            # Логика врагов
             for enemy in enemies:
                 enemy.update(screen, player.rect.x, player.rect.y)
-                if pygame.time.get_ticks() % 100 == 0:  # Враги стреляют с интервалом
+                if pygame.time.get_ticks() % 100 == 0:
                     if enemy.direction == "UP":
                         enemy_bullet = Bullet(enemy.x + 20, enemy.y, "UP")
                     elif enemy.direction == "DOWN":
@@ -88,32 +118,29 @@ def main():
                     enemy_bullets.add(enemy_bullet)
                     all_sprites.add(enemy_bullet)
 
-            # Проверка попадания пули во врага
             for bullet in bullets:
                 hit_enemy = pygame.sprite.spritecollideany(bullet, enemies)
                 if hit_enemy:
                     hit_enemy.kill()
                     bullet.kill()
 
-            # Проверка на поражение
             if pygame.sprite.spritecollideany(player, enemies) or pygame.sprite.spritecollideany(
                 player, enemy_bullets
             ):
-                all_sprites.empty()  # Удаляем все объекты
-                show_game_over(screen, "Поражение")
+                all_sprites.empty()
+                show_game_over(screen, "You lost!")
                 running = False
 
-            # Проверка на победу
+            # # Проверка на победу
             if not enemies:
-                all_sprites.empty()  # Удаляем все объекты
-                show_game_over(screen, "Победа", victory=True)
+                all_sprites.empty()
+                show_game_over(screen, "You won!", victory=True)
                 running = False
 
             all_sprites.draw(screen)
             pygame.display.flip()
             clock.tick(FPS)
 
-        # Ожидание нажатия Enter для перезапуска или Esc для выхода в меню
         waiting_for_restart = True
         while waiting_for_restart:
             for event in pygame.event.get():
@@ -123,24 +150,20 @@ def main():
                     return
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        waiting_for_restart = False  # Перезапуск игры
+                        waiting_for_restart = False
                     elif event.key == pygame.K_ESCAPE:
-                        show_menu(screen)  # Выход в меню
+                        show_menu(screen)
                         waiting_for_restart = False
 
 
 def show_game_over(screen, message, victory=False):
     font = pygame.font.Font(None, 74)
-    text_color = (
-        (0, 255, 0) if victory else (255, 0, 0)
-    )  # Зеленый для победы, красный для поражения
+    text_color = (0, 255, 0) if victory else (255, 0, 0)
     text = font.render(message, True, text_color)
     restart_text = pygame.font.Font(None, 36).render(
-        "Чтобы переиграть нажмите Enter", True, (255, 255, 255)
+        "Press enter to get back to restart", True, (255, 255, 255)
     )
-    menu_text = pygame.font.Font(None, 36).render(
-        "Чтобы выйти в меню нажмите Esc", True, (255, 255, 255)
-    )
+    menu_text = pygame.font.Font(None, 36).render("Press Esc to leave", True, (255, 255, 255))
     screen.fill(BLACK)
     screen.blit(
         text,
@@ -153,7 +176,7 @@ def show_game_over(screen, message, victory=False):
         menu_text, (SCREEN_WIDTH // 2 - menu_text.get_width() // 2, SCREEN_HEIGHT // 2 + 100)
     )
     pygame.display.flip()
-    pygame.time.wait(1000)  # Короткая пауза перед ожиданием ввода
+    pygame.time.wait(1000)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,10 @@ import pygame
 WHITE = (255, 255, 255)
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 
+pygame.init()
+pygame.mixer.init()
+shot = pygame.mixer.Sound("assets/shot.mp3")
+
 #Клас пули, для выстрелов
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, direction):
@@ -14,6 +18,7 @@ class Bullet(pygame.sprite.Sprite):
         self.direction = direction
 
     def update(self):
+        shot.play()
         if self.direction == 'UP':
             self.rect.y -= self.speed
         elif self.direction == 'DOWN':
@@ -22,8 +27,8 @@ class Bullet(pygame.sprite.Sprite):
             self.rect.x -= self.speed
         elif self.direction == 'RIGHT':
             self.rect.x += self.speed
-        
-        # удаления пули при вылета из экрана(чат гпт помог)
+
+        # Удаление пули при вылете за экран
         if (self.rect.right < 0 or self.rect.left > SCREEN_WIDTH or
             self.rect.bottom < 0 or self.rect.top > SCREEN_HEIGHT):
             self.kill()

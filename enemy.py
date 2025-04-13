@@ -1,122 +1,111 @@
 import pygame
 import random
-import math
-from bullet import Bullet
 
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+pygame.init()
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y, player, bullets_group, walls):
-        super().__init__()
-        self.original_image = pygame.image.load("assets/enemy.png").convert_alpha()
-        self.original_image = pygame.transform.scale(self.original_image, (50, 50))
-        self.image = self.original_image.copy()
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (x, y)
-        self.speed = 2
-        self.direction = random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])
-        self.player = player
-        self.bullets_group = bullets_group
-        self.shoot_cooldown = 0
-        self.health = 3
-        self.walls = walls
+# Класс врага
+class Enemy(pygame.sprite.Sprite): 
+    def __init__(self, image_path, x, y, width, height):
+        super().__init__()  
+        self.original_image = pygame.transform.scale(
+            pygame.image.load(image_path), (width, height)
+        ).convert_alpha()
+        self.image = self.original_image
+        self.rect = self.image.get_rect(topleft=(x, y))
 
-        self.move_timer = 0
-        self.player_chase_chance = 0.3  # 30% шанс поехать к игроку
+        self.x = x  
+        self.y = y
+        self.width = width
+        self.height = height
 
-    def update(self):
-        self.move()
-        self.check_wall_collisions()
-        self.try_shoot()
-        self.move_timer += 1
+        self.direction = "DOWN"  
+        self.speed = 1
+        self.walls = []
 
-        if self.move_timer >= 60:  # каждые 60 кадров (~1 секунда)
-            self.decide_direction()
-            self.move_timer = 0
+    def update(self, screen, target_x, target_y):
+        old_x, old_y = self.x, self.y
 
-    def decide_direction(self):
-        if random.random() < self.player_chase_chance:
-            dx = self.player.rect.centerx - self.rect.centerx
-            dy = self.player.rect.centery - self.rect.centery
-            if abs(dx) > abs(dy):
-                self.direction = 'RIGHT' if dx > 0 else 'LEFT'
-            else:
-                self.direction = 'DOWN' if dy > 0 else 'UP'
-        else:
-            self.direction = random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])
+        if abs(self.x - target_x) > 0:
+            if self.x < target_x:
+                self.x += self.speed
+                self.direction = "RIGHT"
+            elif self.x > target_x:
+                self.x -= self.speed
+                self.direction = "LEFT"
+
+        elif abs(self.y - target_y) > 0:
+            if self.y < target_y:
+                self.y += self.speed
+                self.direction = "DOWN"
+            elif self.y > target_y:
+                self.y -= self.speed
+                self.direction = "UP"
+
+        self.rect.topleft = (self.x, self.y)
+
+        if self.handle_collision():  # Проверка и обработка столкновений
+            self.x, self.y = old_x, old_y  # Возврат к предыдущей позиции
+            self.rect.topleft = (self.x, self.y)
+            self.try_avoid_wall()  # Попытка сменить направление
 
         self.rotate()
+        screen.blit(self.image, self.rect)
 
-    def move(self):
-        next_rect = self.rect.copy()
-
-        if self.direction == 'UP':
-            next_rect.y -= self.speed
-        elif self.direction == 'DOWN':
-            next_rect.y += self.speed
-        elif self.direction == 'LEFT':
-            next_rect.x -= self.speed
-        elif self.direction == 'RIGHT':
-            next_rect.x += self.speed
-
-        if 0 <= next_rect.left <= SCREEN_WIDTH - next_rect.width and 0 <= next_rect.top <= SCREEN_HEIGHT - next_rect.height:
-            self.rect = next_rect
-        else:
-            self.try_avoid_wall()
-
-
-    def check_wall_collisions(self):
+    def handle_collision(self):
+        """Проверяет столкновение с препятствиями и возвращает True, если столкновение произошло."""
         for wall in self.walls:
             if self.rect.colliderect(wall.rect):
-                if self.direction == 'UP':
-                    self.rect.top = wall.rect.bottom
-                elif self.direction == 'DOWN':
-                    self.rect.bottom = wall.rect.top
-                elif self.direction == 'LEFT':
-                    self.rect.left = wall.rect.right
-                elif self.direction == 'RIGHT':
-                    self.rect.right = wall.rect.left
-                self.try_avoid_wall()
-
-    def try_avoid_wall(self):
-        options = ['UP', 'DOWN', 'LEFT', 'RIGHT']
-        options.remove(self.direction)
-        random.shuffle(options)
-
-        for option in options:
-            test_rect = self.rect.copy()
-            if option == 'UP':
-                test_rect.y -= self.speed * 5
-            elif option == 'DOWN':
-                test_rect.y += self.speed * 5
-            elif option == 'LEFT':
-                test_rect.x -= self.speed * 5
-            elif option == 'RIGHT':
-                test_rect.x += self.speed * 5
-
-            if not any(test_rect.colliderect(w.rect) for w in self.walls):
-                self.direction = option
-                self.rotate()
-                break
+                return True
+        return False
 
     def rotate(self):
-        if self.direction == 'UP':
+        if self.direction == "UP":
+            self.image = pygame.transform.rotate(self.original_image, 0)
+        elif self.direction == "DOWN":
             self.image = pygame.transform.rotate(self.original_image, 180)
-        elif self.direction == 'RIGHT':
+        elif self.direction == "LEFT":
             self.image = pygame.transform.rotate(self.original_image, 90)
-        elif self.direction == 'DOWN':
-            self.image = self.original_image
-        elif self.direction == 'LEFT':
+        elif self.direction == "RIGHT":
             self.image = pygame.transform.rotate(self.original_image, -90)
 
         old_center = self.rect.center
         self.rect = self.image.get_rect()
         self.rect.center = old_center
 
-    def try_shoot(self):
-        if self.shoot_cooldown <= 0:
-            bullet = Bullet(self.rect.centerx, self.rect.centery, self.direction)
-            self.bullets_group.add(bullet)
-            self.shoot_cooldown = 10
-        else:
-            self.shoot_cooldown -= 1
+    def try_avoid_wall(self):
+        directions = ['UP', 'DOWN', 'LEFT', 'RIGHT']
+        random.shuffle(directions)  # Перемешиваем направления
+        for new_direction in directions:
+            if self.can_move(new_direction):  # Проверяем возможность движения в новом направлении
+                self.direction = new_direction
+                if new_direction == "UP":
+                    self.y -= self.speed
+                elif new_direction == "DOWN":
+                    self.y += self.speed
+                elif new_direction == "LEFT":
+                    self.x -= self.speed
+                elif new_direction == "RIGHT":
+                    self.x += self.speed
+                self.rect.topleft = (self.x, self.y)
+                if not self.handle_collision():  # Проверяем, что новое направление свободно
+                    break
+                else:
+                    self.x, self.y = old_x, old_y  # Возврат к предыдущей позиции
+                    self.rect.topleft = (self.x, self.y)
+
+    def can_move(self, direction):
+        test_rect = self.rect.copy()
+        if direction == "UP":
+            test_rect.y -= self.speed
+        elif direction == "DOWN":
+            test_rect.y += self.speed
+        elif direction == "LEFT":
+            test_rect.x -= self.speed
+        elif direction == "RIGHT":
+            test_rect.x += self.speed
+
+        for wall in self.walls:
+            if test_rect.colliderect(wall.rect):  # Проверка столкновения с новой позицией
+                return False
+        return True
+
