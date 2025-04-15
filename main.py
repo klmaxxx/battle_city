@@ -132,6 +132,7 @@ def main():
                 all_sprites.empty() 
                 show_game_over(screen, "You lost!")
                 running = False
+                
 
             # # Проверка на победу
             if not enemies:
