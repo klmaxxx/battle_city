@@ -1,16 +1,15 @@
 import logging
-
 import pygame
-
 from bullet import Bullet
 from enemy import Enemy
-from mapmanager import Wall
-from menu import show_menu
+from mapmanager import load_level_map, build_walls_from_map, get_free_cells
+from menu import show_menu, show_level_menu
 from player import Player
 
 # Настройка логгера
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
+# Инициализация pygame
 pygame.init()
 pygame.mixer.init()
 
@@ -18,157 +17,21 @@ pygame.mixer.init()
 SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 FPS = 60
 BLACK = (0, 0, 0)
-img1 = "assets/brick.png"
-img2 = "assets/brick1.png"
+TILE_SIZE = 40
 
 # Экран
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Battle City Remake")
 
-# Карта
-walls = [
-    # 1 chast karti
-    Wall(500, 100, 35, 100, img1),
-    Wall(500, 200, 100, 35, img2),
-    Wall(600, 200, 100, 35, img2),
-    Wall(700, 200, 100, 35, img2),
-    # 2 chast karti
-    Wall(100, 100, 35, 100, img1),
-    Wall(0, 200, 100, 35, img2),
-    Wall(35, 200, 100, 35, img2),
-    Wall(650, 230, 35, 100, img1),
-    Wall(250, 0, 35, 100, img1),
-    Wall(350, 0, 35, 100, img1),
-    Wall(350, 100, 35, 100, img1),
-    # 3 chast karti
-    Wall(0, 400, 100, 35, img2),
-    Wall(100, 400, 100, 35, img2),
-    Wall(200, 400, 100, 35, img2),
-    Wall(300, 400, 100, 35, img2),
-    Wall(400, 400, 100, 35, img2),
-    Wall(500, 400, 100, 35, img2),
-    Wall(600, 400, 100, 35, img2),
-    Wall(700, 400, 100, 35, img2),
-    Wall(150, 430, 35, 100, img1),
-]
-
-
-def main():
-    while True:  # Цикл для перезапуска игры
-        clock = pygame.time.Clock()
-        running = True
-
-        # Перемещаем игрока подальше от врагов
-        player = Player(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
-        all_sprites = pygame.sprite.Group(player)
-        bullets = pygame.sprite.Group()
-        enemy_bullets = pygame.sprite.Group()
-
-        # Создаем врагов
-        enemies = pygame.sprite.Group()
-        enemy1 = Enemy("assets/enemy.png", 100, 100, 40, 40)
-        enemy2 = Enemy("assets/enemy.png", 700, 100, 40, 40)
-        enemy3 = Enemy("assets/enemy.png", 400, 300, 40, 40)
-        for enemy in [enemy1, enemy2, enemy3]:
-            enemy.walls = walls  # Передаем список стен врагам
-        enemies.add(enemy1, enemy2, enemy3)
-        all_sprites.add(enemies)
-
-        logging.info("Game started")
-
-        show_menu(screen)
-        pygame.mixer.music.load("assets/soundtrack.mp3")
-        pygame.mixer.music.play()
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    logging.info("Game exited by user")
-                    return
-
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        bullet = Bullet(player.rect.centerx, player.rect.centery, player.direction)
-                        bullets.add(bullet)
-                        all_sprites.add(bullet)
-
-            keys = pygame.key.get_pressed()
-            screen.fill(BLACK)
-            # Карта
-            for wall in walls:
-                wall.update(screen)
-                wall.check_collision(bullets)
-                wall.player_collide(player)
-                if wall.is_destroyed():  # Удаляем стену, если она разрушена
-                    walls.remove(wall)
-
-            player.update(keys)
-            bullets.update(walls)  # Передаем список стен
-            enemy_bullets.update(walls)  # Передаем список стен
-
-            for enemy in enemies:
-                enemy.update(screen, player.rect.x, player.rect.y)
-                if pygame.time.get_ticks() % 100 == 0:  
-                    if enemy.direction == "UP":
-                        enemy_bullet = Bullet(enemy.x + 20, enemy.y, "UP")
-                    elif enemy.direction == "DOWN":
-                        enemy_bullet = Bullet(enemy.x + 20, enemy.y + 40, "DOWN")
-                    elif enemy.direction == "LEFT":
-                        enemy_bullet = Bullet(enemy.x, enemy.y + 20, "LEFT")
-                    elif enemy.direction == "RIGHT":
-                        enemy_bullet = Bullet(enemy.x + 40, enemy.y + 20, "RIGHT")
-                    enemy_bullets.add(enemy_bullet)
-                    all_sprites.add(enemy_bullet)
-
-            for bullet in bullets:
-                hit_enemy = pygame.sprite.spritecollideany(bullet, enemies)
-                if hit_enemy:
-                    hit_enemy.kill()
-                    bullet.kill()
-
-            if pygame.sprite.spritecollideany(player, enemies) or pygame.sprite.spritecollideany(
-                player, enemy_bullets
-            ):
-                all_sprites.empty() 
-                show_game_over(screen, "You lost!")
-                running = False
-                
-
-            # # Проверка на победу
-            if not enemies:
-                all_sprites.empty()  
-                show_game_over(screen, "You won!", victory=True)
-                running = False
-
-            all_sprites.draw(screen)
-            pygame.display.flip()
-            clock.tick(FPS)
-
-        waiting_for_restart = True
-        while waiting_for_restart:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    logging.info("Game exited by user")
-                    return
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        waiting_for_restart = False  
-                    elif event.key == pygame.K_ESCAPE:
-                        show_menu(screen)  
-                        waiting_for_restart = False
-
-
 def show_game_over(screen, message, victory=False):
     font = pygame.font.Font(None, 74)
-    text_color = (
-        (0, 255, 0) if victory else (255, 0, 0)
-    )  
+    text_color = (0, 255, 0) if victory else (255, 0, 0)
     text = font.render(message, True, text_color)
     restart_text = pygame.font.Font(None, 36).render(
-        "Press enter to get back to restart", True, (255, 255, 255)
-    )
-    menu_text = pygame.font.Font(None, 36).render("Press Esc to leave", True, (255, 255, 255))
+        "Press enter to restart", True, (255, 255, 255))
+    menu_text = pygame.font.Font(None, 36).render(
+        "Press Esc to return to menu", True, (255, 255, 255))
+    
     screen.fill(BLACK)
     screen.blit(
         text,
@@ -181,8 +44,158 @@ def show_game_over(screen, message, victory=False):
         menu_text, (SCREEN_WIDTH // 2 - menu_text.get_width() // 2, SCREEN_HEIGHT // 2 + 100)
     )
     pygame.display.flip()
-    pygame.time.wait(1000)  
+    
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    return True  # Рестарт
+                elif event.key == pygame.K_ESCAPE:
+                    return False  # В меню
 
+def main():
+    clock = pygame.time.Clock()
+    
+    while True:
+        # Показ главного меню
+        show_menu(screen)
+        
+        # Показ меню выбора уровня
+        selected_level = show_level_menu(screen)
+        if selected_level is None:
+            pygame.quit()
+            return
+            
+        # Загрузка уровня
+        level_data = load_level_map(selected_level)
+        if not level_data:
+            logging.error(f"Failed to load level {selected_level}")
+            continue
+            
+        walls = build_walls_from_map(level_data)
+        free_cells = get_free_cells(level_data)
+        
+        if not free_cells:
+            logging.error("No free cells found in level map")
+            continue
+            
+        # Создание игрока в случайной свободной позиции
+        player_x, player_y = free_cells[0]
+        player = Player(player_x, player_y)
+
+        # Создание врагов в свободных позициях (не ближе 3 клеток к игроку)
+        enemies = pygame.sprite.Group()
+        enemy_positions = []
+
+        for cell in free_cells[1:]:
+            # Проверяем расстояние до игрока
+            dist = ((cell[0] - player_x)**2 + (cell[1] - player_y)**2)**0.5
+            if dist > 3 * TILE_SIZE and len(enemies) < 3:
+                enemy = Enemy("assets/enemy.png", cell[0], cell[1], TILE_SIZE, TILE_SIZE)
+                enemy.walls = walls
+                enemies.add(enemy)
+                enemy_positions.append(cell)
+        
+        # Группы спрайтов
+        all_sprites = pygame.sprite.Group(player)
+        all_sprites.add(*enemies)
+        bullets = pygame.sprite.Group()
+        enemy_bullets = pygame.sprite.Group()
+        
+        logging.info(f"Game started - Level {selected_level}")
+        
+        # Музыка
+        try:
+            pygame.mixer.music.load("assets/soundtrack.mp3")
+            pygame.mixer.music.play(-1)  # Зацикливание музыки
+        except Exception as e:
+            logging.warning(f"Could not load music: {e}")
+        
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        bullet = Bullet(player.rect.centerx, player.rect.centery, player.direction)
+                        bullets.add(bullet)
+                        all_sprites.add(bullet)
+                    elif event.key == pygame.K_ESCAPE:
+                        running = False
+            
+            keys = pygame.key.get_pressed()
+            screen.fill(BLACK)
+            
+            # Обновление стен
+            for wall in walls[:]:  # Используем копию списка для безопасного удаления
+                wall.update(screen)
+                wall.check_collision(bullets)
+                wall.player_collide(player)
+                if wall.is_destroyed():
+                    walls.remove(wall)
+            
+            # Обновление игрока и пуль
+            player.update(keys)
+            bullets.update(walls)
+            enemy_bullets.update(walls)
+            
+            # Обновление врагов и их стрельба
+            current_time = pygame.time.get_ticks()
+            for enemy in enemies:
+                enemy.update(screen, player.rect.x, player.rect.y)
+                
+                # Стреляем не чаще чем раз в 2 секунды
+                if current_time - getattr(enemy, 'last_shot_time', 0) > 2000:
+                    if enemy.direction == "UP":
+                        enemy_bullet = Bullet(enemy.rect.centerx, enemy.rect.top, "UP")
+                    elif enemy.direction == "DOWN":
+                        enemy_bullet = Bullet(enemy.rect.centerx, enemy.rect.bottom, "DOWN")
+                    elif enemy.direction == "LEFT":
+                        enemy_bullet = Bullet(enemy.rect.left, enemy.rect.centery, "LEFT")
+                    elif enemy.direction == "RIGHT":
+                        enemy_bullet = Bullet(enemy.rect.right, enemy.rect.centery, "RIGHT")
+                    
+                    enemy_bullets.add(enemy_bullet)
+                    all_sprites.add(enemy_bullet)
+                    enemy.last_shot_time = current_time
+            
+            # Проверка попаданий пуль игрока во врагов
+            for bullet in bullets:
+                hit_enemy = pygame.sprite.spritecollide(bullet, enemies, True)
+                if hit_enemy:
+                    bullet.kill()
+            
+            # Проверка смерти игрока
+            if (pygame.sprite.spritecollideany(player, enemies) or 
+                pygame.sprite.spritecollideany(player, enemy_bullets)):
+                if show_game_over(screen, "You lost!"):
+                    running = False
+                    break  # Выход из игрового цикла для рестарта
+                else:
+                    pygame.quit()
+                    return
+            
+            # Проверка победы
+            if not enemies:
+                if show_game_over(screen, "You won!", victory=True):
+                    running = False
+                    break 
+                else:
+                    pygame.quit()
+                    return
+            
+            # Отрисовка всех спрайтов
+            all_sprites.draw(screen)
+            pygame.display.flip()
+            clock.tick(FPS)
 
 if __name__ == "__main__":
     main()
+    pygame.quit()

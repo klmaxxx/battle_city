@@ -1,75 +1,125 @@
 import pygame
 
-pygame.init()
-
-screen = pygame.display.set_mode((800, 600))
-
-
-# класс для стен
 class Wall(pygame.sprite.Sprite):
-    def __init__(self, x, y, width, height, image_path):
-        self.image = pygame.transform.scale(
-            pygame.image.load(image_path), (width, height)
-        ).convert_alpha()
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
+    def __init__(self, x, y, width, height, image_path="assets/brick.png"):
+        super().__init__()
+        try:
+            self.image = pygame.transform.scale(
+                pygame.image.load(image_path), (width, height))
+        except:
+            # Создаем простой прямоугольник, если изображение не загружено
+            self.image = pygame.Surface((width, height))
+            self.image.fill((139, 69, 19))  # Коричневый цвет
         self.rect = pygame.Rect(x, y, width, height)
-        self.hp = 100
         self.hit_count = 4
-        self.health = 4  # Здоровье стены
 
     def take_damage(self):
-        """Уменьшает здоровье стены при попадании пули."""
-        self.health -= 1
+        self.hit_count -= 1
+        if self.hit_count <= 0:
+            self.kill()
 
     def is_destroyed(self):
-        """Проверяет, разрушена ли стена."""
-        return self.health <= 0
+        return self.hit_count <= 0
 
-    # функция для отрисовки стен
     def update(self, screen):
-        if not self.is_destroyed():  # Рисуем стену только если она не разрушена
+        if not self.is_destroyed():
             screen.blit(self.image, self.rect)
 
-    # функция для коллизий - взял ее из своего старого проекта
     def player_collide(self, player):
         if player.rect.colliderect(self.rect):
             if player.rect.clipline(self.rect.topleft, self.rect.topright):
-                # player.rect.y -= player.speedy
                 player.rect.bottom = self.rect.top
             if player.rect.clipline(self.rect.bottomleft, self.rect.bottomright):
-                # player.rect.y += player.speedy
                 player.rect.top = self.rect.bottom
             if player.rect.clipline(self.rect.topright, self.rect.bottomright):
-                # player.rect.x += player.speedx
                 player.rect.left = self.rect.right
             if player.rect.clipline(self.rect.topleft, self.rect.bottomleft):
-                # player.rect.x -= player.speedx
                 player.rect.right = self.rect.left
 
     def kill(self):
-        self.x = -100
-        self.y = -100
         self.rect.x = -100
         self.rect.y = -100
 
     def check_collision(self, bullets):
         for bullet in bullets:
             if self.rect.colliderect(bullet.rect):
-                bullet.kill()  
-                self.hit_count -= 1
-                if self.hit_count <= 0:
-                    self.kill()  
+                bullet.kill()
+                self.take_damage()
 
+def load_level_map(level):
+    if level == 1:
+        return [
+            "###################",
+            "#.....#####.....###",
+            "#.###.......###...#",
+            "#.#.#.#####.#.#.#.#",
+            "#.#.#.#...#.#.#.#.#",
+            "#.###.#.#.#.###.#.#",
+            "#.....#.#.#.....#.#",
+            "#####.#.#.#.#####.#",
+            "#.....#.#.#.....#.#",
+            "#.###.#.#.#.###.#.#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#.#.#...#.#.#.#.#",
+            "#.###.#####.###...#",
+            "#.....#####.....###",
+            "###################"
+        ]
+    elif level == 2:
+        return [
+            "###################",
+            "#...#.......#.....#",
+            "#.#.#.#####.#.###.#",
+            "#.#.#.#...#.#.#...#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#...#.#.#...#.#.#",
+            "#.#####.#.#####.#.#",
+            "#.......#.......#.#",
+            "#.#####.#.#####.#.#",
+            "#.#...#.#.#...#.#.#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#.#.....#.#.#...#",
+            "#...#.......#.....#",
+            "###################"
+        ]
+    elif level == 3:
+        return [
+            "###################",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.................#",
+            "####.#######.######",
+            "#.................#",
+            "#.####.....####...#",
+            "#.................#",
+            "######.#######.####",
+            "#.................#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "#.#.#.#.#.#.#.#.#.#",
+            "###################"
+        ]
+    else:
+        return []
 
-# map = True
+def build_walls_from_map(level_data, brick_image="assets/brick.png", tile_size=40):
+    walls = []
+    for row_idx, row in enumerate(level_data):
+        for col_idx, cell in enumerate(row):
+            if cell == "#":
+                x = col_idx * tile_size
+                y = row_idx * tile_size
+                walls.append(Wall(x, y, tile_size, tile_size, brick_image))
+    return walls
 
-
-# while map:
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             map = False
-#     screen.fill((0, 0, 0))
-#     pygame.display.flip()
+def get_free_cells(level_data, tile_size=40):
+    free_cells = []
+    for row_idx, row in enumerate(level_data):
+        for col_idx, cell in enumerate(row):
+            if cell == ".":
+                x = col_idx * tile_size
+                y = row_idx * tile_size
+                free_cells.append((x, y))
+    return free_cells

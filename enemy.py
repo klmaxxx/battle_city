@@ -12,15 +12,16 @@ class Enemy(pygame.sprite.Sprite):
         ).convert_alpha()
         self.image = self.original_image
         self.rect = self.image.get_rect(topleft=(x, y))
-
+        
         self.x = x  
         self.y = y
         self.width = width
         self.height = height
-
+        
         self.direction = "DOWN"  
         self.speed = 1
         self.walls = []
+        self.last_shot_time = 0  
 
     def update(self, screen, target_x, target_y):
         if abs(self.x - target_x) > 0:
