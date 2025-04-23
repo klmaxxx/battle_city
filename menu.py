@@ -14,7 +14,7 @@ def show_menu(screen):
     pygame.mixer.init()
     clock = pygame.time.Clock()
     pygame.mixer.music.load("assets/soundtrack1.mp3")
-    pygame.mixer.music.set_volume(1)
+    pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play()
 
     menu_running = True

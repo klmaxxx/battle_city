@@ -6,6 +6,8 @@ SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
 pygame.init()
 pygame.mixer.init()
 shot = pygame.mixer.Sound("assets/shot.mp3")
+shot.set_volume(0.3)
+pygame.mixer.music.set_volume(0.3)
 
 #Клас пули, для выстрелов
 class Bullet(pygame.sprite.Sprite):

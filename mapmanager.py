@@ -7,11 +7,19 @@ class Wall(pygame.sprite.Sprite):
             self.image = pygame.transform.scale(
                 pygame.image.load(image_path), (width, height))
         except:
-            # Создаем простой прямоугольник, если изображение не загружено
             self.image = pygame.Surface((width, height))
-            self.image.fill((139, 69, 19))  # Коричневый цвет
+            self.image.fill((139, 69, 19))
         self.rect = pygame.Rect(x, y, width, height)
         self.hit_count = 4
+        self.collision_rect = pygame.Rect(x, y, width, height)  
+
+        shrink_amount = 1
+        self.collision_rect = pygame.Rect(
+            x + shrink_amount, 
+            y + shrink_amount, 
+            width - 2 * shrink_amount, 
+            height - 2 * shrink_amount
+        )
 
     def take_damage(self):
         self.hit_count -= 1
@@ -26,25 +34,29 @@ class Wall(pygame.sprite.Sprite):
             screen.blit(self.image, self.rect)
 
     def player_collide(self, player):
-        if player.rect.colliderect(self.rect):
-            if player.rect.clipline(self.rect.topleft, self.rect.topright):
-                player.rect.bottom = self.rect.top
-            if player.rect.clipline(self.rect.bottomleft, self.rect.bottomright):
-                player.rect.top = self.rect.bottom
-            if player.rect.clipline(self.rect.topright, self.rect.bottomright):
-                player.rect.left = self.rect.right
-            if player.rect.clipline(self.rect.topleft, self.rect.bottomleft):
+        if player.rect.colliderect(self.collision_rect):
+            # Точное определение стороны столкновения
+            if player.direction == 'RIGHT' and player.rect.right > self.rect.left and player.rect.left < self.rect.left:
                 player.rect.right = self.rect.left
+            elif player.direction == 'LEFT' and player.rect.left < self.rect.right and player.rect.right > self.rect.right:
+                player.rect.left = self.rect.right
+            elif player.direction == 'DOWN' and player.rect.bottom > self.rect.top and player.rect.top < self.rect.top:
+                player.rect.bottom = self.rect.top
+            elif player.direction == 'UP' and player.rect.top < self.rect.bottom and player.rect.bottom > self.rect.bottom:
+                player.rect.top = self.rect.bottom
 
     def kill(self):
         self.rect.x = -100
         self.rect.y = -100
+        self.collision_rect.x = -100
+        self.collision_rect.y = -100
 
     def check_collision(self, bullets):
         for bullet in bullets:
-            if self.rect.colliderect(bullet.rect):
+            if self.collision_rect.colliderect(bullet.rect):
                 bullet.kill()
                 self.take_damage()
+
 
 def load_level_map(level):
     if level == 1:

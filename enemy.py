@@ -24,26 +24,29 @@ class Enemy(pygame.sprite.Sprite):
         self.last_shot_time = 0  
 
     def update(self, screen, target_x, target_y):
-        if abs(self.x - target_x) > 0:
-            if self.x < target_x:
-                self.x += self.speed
-                self.direction = "RIGHT"
-            elif self.x > target_x:
-                self.x -= self.speed
-                self.direction = "LEFT"
-
-        elif abs(self.y - target_y) > 0:
-            if self.y < target_y:
-                self.y += self.speed
-                self.direction = "DOWN"
-            elif self.y > target_y:
-                self.y -= self.speed
-                self.direction = "UP"
-
+        self.last_position = self.rect.topleft
+        
+        dx = target_x - self.x
+        dy = target_y - self.y
+        distance = max(1, (dx**2 + dy**2)**0.5)
+        
+        dx = dx / distance * self.speed
+        dy = dy / distance * self.speed
+        
+        self.x += dx
+        self.y += dy
+        
+        if abs(dx) > abs(dy):
+            self.direction = "RIGHT" if dx > 0 else "LEFT"
+        else:
+            self.direction = "DOWN" if dy > 0 else "UP"
+        
         self.rect.topleft = (self.x, self.y)
-
-        self.handle_collision()  # Проверка и обработка столкновений
-
+        
+        if self.handle_collision():
+            self.rect.topleft = self.last_position
+            self.x, self.y = self.last_position
+        
         self.rotate()
         screen.blit(self.image, self.rect)
 
@@ -51,7 +54,7 @@ class Enemy(pygame.sprite.Sprite):
         """Проверяет столкновение с препятствиями и разворачивается в противоположную сторону при столкновении."""
         for wall in self.walls:
             if self.rect.colliderect(wall.rect):
-                self.change_direction()  # Разворот в противоположную сторону
+                self.change_direction() 
                 return True
         return False
 
